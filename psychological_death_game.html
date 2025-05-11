@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>対話者 D - デスゲーム</title>
+  <style>
+    body {
+      background-color: #111;
+      color: #f0f0f0;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 2em;
+      overflow: hidden;
+    }
+    #dialogue {
+      max-width: 600px;
+      margin: auto;
+      background: #222;
+      padding: 1em;
+      border-radius: 8px;
+    }
+    .choice {
+      margin-top: 1em;
+    }
+    .choice button {
+      background: #444;
+      color: white;
+      border: none;
+      padding: 0.5em 1em;
+      margin: 0.2em;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    .choice button:hover {
+      background: #666;
+    }
+    @keyframes bloodSplash {
+      0% { opacity: 0; transform: scale(0.5); }
+      100% { opacity: 1; transform: scale(1.5); }
+    }
+    #blood {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: url('blood.png') no-repeat center center;
+      background-size: cover;
+      animation: bloodSplash 0.3s ease-out forwards;
+      pointer-events: none;
+      z-index: 9999;
+      display: none;
+    }
+    body.shake {
+      animation: shake 0.5s;
+    }
+    @keyframes shake {
+      0% { transform: translate(1px, 1px); }
+      20% { transform: translate(-1px, 2px); }
+      40% { transform: translate(-3px, -1px); }
+      60% { transform: translate(3px, 1px); }
+      80% { transform: translate(-1px, -2px); }
+      100% { transform: translate(1px, 2px); }
+    }
+  </style>
+</head>
+<body>
+  <div id="dialogue">
+    <p id="line"></p>
+    <div class="choice" id="choices"></div>
+  </div>
+  <div id="blood"></div>
+  <script>
+    const stages = [
+      {
+        id: 'intro',
+        lines: ["？？？「君、本当にこのゲームに参加する覚悟はあるのかい？」"],
+        choices: [
+          { text: "▶ 覚悟はある。始めよう。", next: 'stage1' },
+          { text: "▶ ……これは何の冗談だ？", next: 'death' }
+        ]
+      },
+      {
+        id: 'stage1',
+        lines: [
+          "？？？「よろしい。ではルールを説明しよう——これは言葉だけのデスゲームだ。」",
+          "？？？「君の選択で相手の心理を崩せなければ、君が負ける。」",
+          "？？？「この最初の問題に答えてみろ。」",
+          "？？？「君の親友が君を裏切ったと聞かされたら、どうする？」"
+        ],
+        choices: [
+          { text: "▶ 信じない。友人を信じる。", next: 'stage2' },
+          { text: "▶ 裏切ったなら制裁を。", next: 'death' }
+        ]
+      },
+      {
+        id: 'stage2',
+        lines: [
+          "？？？「なるほど……感情に流されぬ意志。だが、次はどうかな。」",
+          "？？？「君の命と他人100人の命、どちらかしか救えないとしたら？」"
+        ],
+        choices: [
+          { text: "▶ 他人を救う。", next: 'boss' },
+          { text: "▶ 自分を選ぶ。", next: 'death' }
+        ]
+      },
+      {
+        id: 'boss',
+        lines: [
+          "ボス「来たか……愚かな者よ。すべてを賭ける覚悟はあるか？」",
+          "ボス「私の質問に“本心”で答えよ。偽れば……死ぬ。」",
+          "ボス「お前は、ここまでに嘘をついてきたな？」"
+        ],
+        choices: [
+          { text: "▶ ……はい。", next: 'trueEnd' },
+          { text: "▶ いいえ。", next: 'death' }
+        ]
+      },
+      {
+        id: 'trueEnd',
+        lines: ["ボス「素直な者には、救いもある——生き延びるがいい。」"],
+        choices: []
+      },
+      {
+        id: 'death',
+        lines: ["……間違った選択だったようだな。君のゲームは、ここで終わる。」"],
+        choices: []
+      }
+    ];
+
+    let currentStage = null;
+    let lineIndex = 0;
+
+    function showStage(id) {
+      currentStage = stages.find(s => s.id === id);
+      lineIndex = 0;
+      showLine();
+    }
+
+    function showLine() {
+      const dialogue = document.getElementById('line');
+      const choices = document.getElementById('choices');
+      dialogue.innerText = currentStage.lines[lineIndex];
+      choices.innerHTML = '';
+
+      if (lineIndex < currentStage.lines.length - 1) {
+        setTimeout(() => {
+          lineIndex++;
+          showLine();
+        }, 1800);
+        return;
+      }
+
+      if (currentStage.choices.length === 0) {
+        if (currentStage.id === 'death') triggerDeath();
+        else if (currentStage.id === 'trueEnd') {
+          document.getElementById('dialogue').innerHTML = '<h2 style="text-align:center;color:lime">YOU SURVIVED</h2>';
+        }
+        return;
+      }
+
+      currentStage.choices.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.textContent = choice.text;
+        btn.onclick = () => showStage(choice.next);
+        choices.appendChild(btn);
+      });
+    }
+
+    function triggerDeath() {
+      document.body.classList.add('shake');
+      const blood = document.getElementById('blood');
+      blood.style.display = 'block';
+
+      setTimeout(() => {
+        document.body.innerHTML = "<h1 style='color: red; text-align: center; font-size: 3em;'>GAME OVER</h1>";
+      }, 1000);
+    }
+
+    showStage('intro');
+  </script>
+</body>
+</html>
